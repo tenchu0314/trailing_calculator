@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>トレイリング注文 補助ツール | 楽天証券 注文入力アシスト</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+      min-height: 100vh;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover {
+      transition: all 0.2s ease-in-out;
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 8px 25px -5px rgba(59, 130, 246, 0.15);
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased pb-16">
+
+  <!-- Header Section -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 via-blue-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <i data-lucide="edit-3" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            トレイリング注文 補助ツール
+            <span class="text-xs font-normal px-2.5 py-0.5 rounded-full bg-red-950/80 text-red-400 border border-red-800/50">楽天証券 注文画面入力対応</span>
+          </h1>
+          <p class="text-xs text-slate-400">楽天証券注文画面に入力する「成行売り(円)」「開始条件(円)」「下落幅(%)」を即座に計算</p>
+        </div>
+      </div>
+      
+      <!-- Right Header Info Toggle -->
+      <button id="guide-toggle-btn" class="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700">
+        <i data-lucide="help-circle" class="w-4 h-4 text-blue-400"></i>
+        <span>楽天証券画面との対応関係</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
+
+    <!-- Help / Explanation Banner (Collapsible) -->
+    <div id="guide-box" class="glass-card rounded-2xl p-5 border-l-4 border-l-blue-500 relative overflow-hidden transition-all duration-300">
+      <button id="guide-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      <h3 class="text-sm font-bold text-blue-400 flex items-center gap-2 mb-2">
+        <i data-lucide="info" class="w-4 h-4"></i> 楽天証券 トレイリング注文画面への転記方法
+      </h3>
+      <p class="text-xs text-slate-300 leading-relaxed mb-3">
+        楽天証券のトレイリング注文画面では、<b>「成行売り条件株価(円)」「トレイリング開始逆指値(円)」「トレイリング下落幅(%)」</b>を入力します。本ツールの表示数値をそのまま転記することで、意図通りのトレイリング注文が発注できます。
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+        <div class="space-y-1">
+          <div class="flex items-center gap-1.5 font-bold text-emerald-400">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[11px]">1</span>
+            1. 成行売り条件 (円)
+          </div>
+          <p class="text-slate-400 text-[11px]">利確ターゲット株価（例: 1,010円）。この価格以上になるとトレイリング機能が有効化されます。</p>
+        </div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-1.5 font-bold text-rose-400">
+            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-[11px]">2</span>
+            2. 開始条件 / 逆指値 (円)
+          </div>
+          <p class="text-slate-400 text-[11px]">損切り株価（例: 990円）。上記利確単価に到達する前にこの価格を下回ったら損切り売却されます。</p>
+        </div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-1.5 font-bold text-blue-400">
+            <span class="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[11px]">3</span>
+            3. トレイリング幅 (%) & 損益
+          </div>
+          <p class="text-slate-400 text-[11px]">高値から何％下がったら売るかの設定（例: 0.2%）。この反落で確定する実際の利益額を計算します。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inputs & Preset Control Card -->
+    <section class="glass-card rounded-2xl p-6 shadow-xl relative">
+      
+      <!-- Single 4-Column Grid for Inputs + Presets (Guarantees 100% Horizontal Alignment) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        
+        <!-- Field 1: Stock Price -->
+        <div>
+          <label for="input-price" class="block text-xs font-bold text-slate-200 mb-2 h-5 flex items-center justify-between whitespace-nowrap">
+            <span>購入株価 <span class="text-rose-400 font-bold">*必須</span></span>
+            <span class="text-[11px] text-slate-400 font-normal">単位: 円</span>
+          </label>
+          <div class="relative rounded-xl shadow-sm">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i data-lucide="japanese-yen" class="w-4 h-4"></i>
+            </div>
+            <input type="number" id="input-price" min="1" step="any" placeholder="例: 1000"
+              class="block w-full h-[46px] rounded-xl border border-slate-700 bg-slate-900/90 pl-9 pr-12 text-white text-base font-semibold placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none">
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-slate-400">
+              円
+            </div>
+          </div>
+        </div>
+
+        <!-- Field 2: Quantity -->
+        <div>
+          <label for="input-quantity" class="block text-xs font-bold text-slate-200 mb-2 h-5 flex items-center justify-between whitespace-nowrap">
+            <span>保有数量 <span class="text-slate-400 font-normal">(任意)</span></span>
+            <span class="text-[11px] text-slate-400 font-normal">単位: 株</span>
+          </label>
+          <div class="relative rounded-xl shadow-sm">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i data-lucide="layers" class="w-4 h-4"></i>
+            </div>
+            <input type="number" id="input-quantity" min="100" step="100" placeholder="未入力 (100株単位)"
+              class="block w-full h-[46px] rounded-xl border border-slate-700 bg-slate-900/90 pl-9 pr-12 text-white text-base font-semibold placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none">
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-slate-400">
+              株
+            </div>
+          </div>
+        </div>
+
+        <!-- Field 3: Trailing Ratio -->
+        <div>
+          <label for="input-trail-ratio" class="block text-xs font-bold text-slate-200 mb-2 h-5 flex items-center justify-between whitespace-nowrap">
+            <span>削り幅の割合</span>
+            <span class="text-[11px] text-blue-400 font-medium">デフォルト: 20%</span>
+          </label>
+          <div class="relative rounded-xl shadow-sm">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i data-lucide="percent" class="w-4 h-4"></i>
+            </div>
+            <input type="number" id="input-trail-ratio" min="0" max="100" value="20" step="1"
+              class="block w-full h-[46px] rounded-xl border border-slate-700 bg-slate-900/90 pl-9 pr-12 text-white text-base font-semibold placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none">
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-slate-400">
+              %削り
+            </div>
+          </div>
+        </div>
+
+        <!-- Field 4: Presets -->
+        <div>
+          <div class="block text-xs font-bold text-slate-400 mb-2 h-5 flex items-center whitespace-nowrap">
+            <span>クイック入力</span>
+          </div>
+          <div class="flex items-center gap-1.5 h-[46px]">
+            <button type="button" onclick="setPreset(1000, 100)" class="h-full text-xs px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all active:scale-95 flex items-center justify-center font-medium whitespace-nowrap">
+              1,000円 / 100株
+            </button>
+            <button type="button" onclick="setPreset(3000, 100)" class="h-full text-xs px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all active:scale-95 flex items-center justify-center font-medium whitespace-nowrap">
+              3,000円 / 100株
+            </button>
+            <button type="button" onclick="resetForm()" class="h-full text-xs px-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50 transition-all flex items-center justify-center gap-1 font-medium whitespace-nowrap" title="リセット">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Live Summary Bar -->
+      <div id="summary-bar" class="mt-5 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-4">
+        <div class="flex items-center gap-4">
+          <div>
+            基準株価: <span id="summary-base-price" class="text-white font-semibold text-sm">-- 円</span>
+          </div>
+          <div class="border-l border-slate-800 pl-4">
+            保有数量: <span id="summary-quantity" class="text-white font-semibold text-sm">-- 株</span>
+          </div>
+          <div class="border-l border-slate-800 pl-4">
+            総投資額: <span id="summary-total-investment" class="text-blue-400 font-semibold text-sm">-- 円</span>
+          </div>
+        </div>
+        <div class="text-slate-400 flex items-center gap-1.5">
+          <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>1%〜10%の各レベルで「成行売り(円)」「開始逆指値(円)」「下落幅(%)と利益」を表示中</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Empty State Alert -->
+    <div id="empty-notice" class="glass-card rounded-2xl p-10 text-center space-y-3 border border-slate-800">
+      <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
+        <i data-lucide="calculator" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-base font-semibold text-slate-200">購入株価を入力してください</h3>
+      <p class="text-xs text-slate-400 max-w-md mx-auto">
+        「購入株価」を入力すると、楽天証券の注文画面に入力する「成行売りの円表示」「開始条件の円表示」「何%下がったら売るか」の数値を一覧表示します。
+      </p>
+    </div>
+
+    <!-- Results Section: Rakuten Order Form Assister (1% to 10%) -->
+    <div id="results-container" class="hidden space-y-4">
+      
+      <!-- List Header Bar -->
+      <div class="flex items-center justify-between px-2 text-xs font-bold text-slate-400">
+        <div class="flex items-center gap-2">
+          <i data-lucide="list-checks" class="w-4 h-4 text-blue-400"></i>
+          <span>楽天証券 注文画面入力用 パラメータ試算一覧 (±1% 〜 ±10%)</span>
+        </div>
+        <div class="text-[11px] text-slate-400">
+          緑: 成行売り円 / 赤: 開始逆指値円 / 青: 下落幅% & 確定利益
+        </div>
+      </div>
+
+      <!-- Order Form Cards Container -->
+      <div id="order-cards-list" class="space-y-4">
+        <!-- Dynamically populated via JS -->
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-16 text-center text-xs text-slate-500 border-t border-slate-800/60 pt-6">
+    <p>トレイリング注文 補助ツール | 楽天証券 アルゴ注文試算シミュレータ</p>
+    <p class="mt-1 text-[11px] text-slate-600">※本ツールの計算結果は概算であり、実際の取引における約定価格や手数料・税金を保証するものではありません。</p>
+  </footer>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // DOM Elements
+    const inputPrice = document.getElementById('input-price');
+    const inputQuantity = document.getElementById('input-quantity');
+    const inputTrailRatio = document.getElementById('input-trail-ratio');
+
+    const emptyNotice = document.getElementById('empty-notice');
+    const resultsContainer = document.getElementById('results-container');
+    const orderCardsList = document.getElementById('order-cards-list');
+
+    const summaryBasePrice = document.getElementById('summary-base-price');
+    const summaryQuantity = document.getElementById('summary-quantity');
+    const summaryTotalInvestment = document.getElementById('summary-total-investment');
+
+    const guideToggleBtn = document.getElementById('guide-toggle-btn');
+    const guideCloseBtn = document.getElementById('guide-close-btn');
+    const guideBox = document.getElementById('guide-box');
+
+    // Toggle Help Guide Box
+    guideToggleBtn.addEventListener('click', () => {
+      guideBox.classList.toggle('hidden');
+    });
+    guideCloseBtn.addEventListener('click', () => {
+      guideBox.classList.add('hidden');
+    });
+
+    // Formatting Utility Functions
+    function formatYen(num) {
+      if (num === null || Number.isNaN(num)) return '--';
+      return Math.round(num).toLocaleString('ja-JP') + ' 円';
+    }
+
+    function formatYenWithSign(num) {
+      if (num === null || Number.isNaN(num)) return '--';
+      const rounded = Math.round(num);
+      const sign = rounded > 0 ? '+' : '';
+      return sign + rounded.toLocaleString('ja-JP') + ' 円';
+    }
+
+    // Set Preset Values
+    function setPreset(price, quantity) {
+      inputPrice.value = price;
+      inputQuantity.value = quantity;
+      calculateAndRender();
+    }
+
+    // Reset Form
+    function resetForm() {
+      inputPrice.value = '';
+      inputQuantity.value = '';
+      inputTrailRatio.value = '20';
+      calculateAndRender();
+    }
+
+    // Main Calculation and Rendering
+    function calculateAndRender() {
+      const price = parseFloat(inputPrice.value);
+      const quantityVal = inputQuantity.value.trim();
+      const quantity = quantityVal !== '' && !Number.isNaN(parseFloat(quantityVal)) ? parseFloat(quantityVal) : null;
+      
+      let trailRatio = parseFloat(inputTrailRatio.value);
+      if (Number.isNaN(trailRatio) || trailRatio < 0) trailRatio = 20;
+      if (trailRatio > 100) trailRatio = 100;
+
+      if (Number.isNaN(price) || price <= 0) {
+        emptyNotice.classList.remove('hidden');
+        resultsContainer.classList.add('hidden');
+        summaryBasePrice.textContent = '-- 円';
+        summaryQuantity.textContent = '-- 株';
+        summaryTotalInvestment.textContent = '-- 円';
+        return;
+      }
+
+      // Hide empty notice and show results
+      emptyNotice.classList.add('hidden');
+      resultsContainer.classList.remove('hidden');
+
+      // Update Summary Bar
+      summaryBasePrice.textContent = formatYen(price);
+      summaryQuantity.textContent = quantity !== null ? `${quantity.toLocaleString('ja-JP')} 株` : '未指定';
+      summaryTotalInvestment.textContent = quantity !== null ? formatYen(price * quantity) : '未指定 (株数未入力)';
+
+      // Generate 1% to 10% Order Cards
+      let cardsHTML = '';
+      for (let i = 1; i <= 10; i++) {
+        const percent = i; // 1% ~ 10%
+
+        // 1. 成行売り条件の円表示 (+i% 上昇時)
+        const targetSellPrice = price * (1 + percent / 100);
+        const targetProfit = quantity !== null ? (targetSellPrice - price) * quantity : null;
+
+        // 2. 開始条件 (逆指値) の円表示 (-i% 下落時)
+        const startStopPrice = price * (1 - percent / 100);
+        const stopLoss = quantity !== null ? (startStopPrice - price) * quantity : null;
+
+        // 3. 何%下がったら売るかの表示 (トレイリング幅 %)
+        // Drop in % = percent * (trailRatio / 100)
+        // Drop in JPY = price * (dropPercent / 100)
+        const dropPercent = percent * (trailRatio / 100);
+        const dropJpy = price * (dropPercent / 100);
+
+        // Executed price & profit after trailing drop
+        const execPercent = percent - dropPercent;
+        const execPrice = price * (1 + execPercent / 100);
+        const execProfit = quantity !== null ? (execPrice - price) * quantity : null;
+
+        cardsHTML += `
+          <div class="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-800/80 shadow-xl">
+            
+            <!-- Card Level Title Bar -->
+            <div class="bg-slate-900 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md">
+                  ±${percent}%
+                </span>
+                <span class="text-sm font-extrabold text-white">変動幅 ±${percent}% 設定カード (基準株価: ${formatYen(price)})</span>
+              </div>
+              <div class="text-xs text-slate-400">
+                上昇ターゲット: <strong class="text-emerald-400">+${percent}.0%</strong> / 下落リスク: <strong class="text-rose-400">-${percent}.0%</strong>
+              </div>
+            </div>
+
+            <!-- Prominent Rakuten Order Entry Banner (High Visibility Highlight) -->
+            <div class="bg-slate-950/90 px-4 py-3 border-b border-amber-500/40 flex flex-wrap items-center justify-between gap-3 shadow-inner">
+              <div class="flex items-center gap-2">
+                <span class="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/60 text-xs font-black flex items-center gap-1.5 shadow-sm">
+                  <i data-lucide="copy" class="w-4 h-4 text-amber-400"></i>
+                  楽天証券 注文画面に入力する数値
+                </span>
+              </div>
+              
+              <div class="flex items-center gap-3 flex-wrap">
+                <!-- 1. 成行売り -->
+                <div class="flex items-center gap-2 bg-emerald-950/90 px-3.5 py-1.5 rounded-xl border border-emerald-500/60 shadow-md">
+                  <span class="text-xs text-emerald-300 font-bold">1. 成行売り株価:</span>
+                  <span class="text-base font-extrabold text-emerald-400 tracking-tight">${formatYen(targetSellPrice)}</span>
+                </div>
+                
+                <!-- 2. 開始逆指値 -->
+                <div class="flex items-center gap-2 bg-rose-950/90 px-3.5 py-1.5 rounded-xl border border-rose-500/60 shadow-md">
+                  <span class="text-xs text-rose-300 font-bold">2. 開始/損切株価:</span>
+                  <span class="text-base font-extrabold text-rose-400 tracking-tight">${formatYen(startStopPrice)}</span>
+                </div>
+
+                <!-- 3. 下落幅% -->
+                <div class="flex items-center gap-2 bg-blue-950/90 px-3.5 py-1.5 rounded-xl border border-blue-500/60 shadow-md">
+                  <span class="text-xs text-blue-300 font-bold">3. 下落幅設定:</span>
+                  <span class="text-base font-extrabold text-blue-300 tracking-tight">${dropPercent.toFixed(2).replace(/\.?0+$/, '')} %</span>
+                  <span class="text-[11px] text-slate-400 font-medium">(-${dropJpy.toFixed(1).replace(/\.0$/, '')}円幅)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Main 3 Key Fields Grid (Mirrors Rakuten Order Screen Input) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-800/80">
+              
+              <!-- Field 1: 成行売り条件の円表示 (+i%) -->
+              <div class="p-4 bg-emerald-950/15 space-y-3 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-emerald-900/40">
+                    <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                      <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[11px] font-bold">1</span>
+                      1. 成行売りの円表示
+                    </span>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/80 font-bold">
+                      +${percent}.0% 上昇時
+                    </span>
+                  </div>
+                  
+                  <div class="mt-3 bg-slate-900/90 p-3 rounded-xl border border-emerald-500/30">
+                    <div class="text-[11px] text-slate-400 font-medium">楽天証券入力金額 (成行売り発動)</div>
+                    <div class="text-xl font-extrabold text-emerald-300 mt-0.5 tracking-tight">${formatYen(targetSellPrice)}</div>
+                  </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                  <span class="text-slate-400 text-[11px]">到達時の想定含み益</span>
+                  <span class="font-bold text-emerald-400 text-sm">${quantity !== null ? formatYenWithSign(targetProfit) : '+ ' + percent + '.0%'}</span>
+                </div>
+              </div>
+
+              <!-- Field 2: 開始条件の円表示 (-i%) -->
+              <div class="p-4 bg-rose-950/15 space-y-3 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-rose-900/40">
+                    <span class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                      <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-[11px] font-bold">2</span>
+                      2. 開始条件 (逆指値) の円表示
+                    </span>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800/80 font-bold">
+                      -${percent}.0% 下落時
+                    </span>
+                  </div>
+
+                  <div class="mt-3 bg-slate-900/90 p-3 rounded-xl border border-rose-500/30">
+                    <div class="text-[11px] text-slate-400 font-medium">楽天証券入力金額 (開始/損切逆指値)</div>
+                    <div class="text-xl font-extrabold text-rose-300 mt-0.5 tracking-tight">${formatYen(startStopPrice)}</div>
+                  </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                  <span class="text-slate-400 text-[11px]">未達成下落時の想定損失</span>
+                  <span class="font-bold text-rose-400 text-sm">${quantity !== null ? formatYenWithSign(stopLoss) : '- ' + percent + '.0%'}</span>
+                </div>
+              </div>
+
+              <!-- Field 3: 何％下がったら売るのか表示 ＆ 確定利益額 -->
+              <div class="p-4 bg-blue-950/20 space-y-3 flex flex-col justify-between border-blue-500/30">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-blue-900/40">
+                    <span class="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+                      <span class="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[11px] font-bold">3</span>
+                      3. 何％下がったら売るか (下落幅)
+                    </span>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/80 font-bold">
+                      削り幅設定
+                    </span>
+                  </div>
+
+                  <div class="mt-3 bg-slate-900/90 p-3 rounded-xl border border-blue-500/30 space-y-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="text-slate-400">下落幅設定値 (%)</span>
+                      <span class="text-sm font-extrabold text-blue-300">${dropPercent.toFixed(2).replace(/\.?0+$/, '')} % 下落</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800 pt-1">
+                      <span>金額換算幅</span>
+                      <span class="font-semibold text-slate-300">-${dropJpy.toFixed(1).replace(/\.0$/, '')} 円 幅</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>実質残算利回り</span>
+                      <span class="font-bold text-emerald-400">+${execPercent.toFixed(2).replace(/\.?0+$/, '')} %</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Executed Result & Profit Display -->
+                <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                  <div>
+                    <span class="text-slate-400 text-[11px]">トレイリング約定株価</span>
+                    <div class="font-bold text-blue-300 text-xs">${formatYen(execPrice)}</div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-slate-400 text-[11px]">確定利益 (売却成立)</span>
+                    <div class="font-bold text-blue-400 text-sm">${quantity !== null ? formatYenWithSign(execProfit) : '+ ' + execPercent.toFixed(2).replace(/\.?0+$/, '') + '%'}</div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        `;
+      }
+      orderCardsList.innerHTML = cardsHTML;
+
+      // Re-initialize Lucide Icons for dynamic elements
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    // Event Listeners for Live Calculation
+    inputPrice.addEventListener('input', calculateAndRender);
+    inputQuantity.addEventListener('input', calculateAndRender);
+    inputTrailRatio.addEventListener('input', calculateAndRender);
+
+    // Initial Lucide Icons Render
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+      calculateAndRender();
+    });
+  </script>
+</body>
+</html>
