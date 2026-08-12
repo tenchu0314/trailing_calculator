@@ -112,8 +112,8 @@
     <!-- Inputs & Preset Control Card -->
     <section class="glass-card rounded-2xl p-6 shadow-xl relative">
       
-      <!-- Single 4-Column Grid for Inputs + Presets (Guarantees 100% Horizontal Alignment) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+      <!-- Single 5-Column Grid for Inputs + Presets (Guarantees 100% Horizontal Alignment) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
         
         <!-- Field 1: Stock Price -->
         <div>
@@ -169,19 +169,40 @@
           </div>
         </div>
 
-        <!-- Field 4: Presets -->
+        <!-- Field 4: TSE Stock Type (Tick Size Rule) -->
+        <div>
+          <label for="input-stock-type" class="block text-xs font-bold text-slate-200 mb-2 h-5 flex items-center justify-between whitespace-nowrap">
+            <span>東証 呼値区分</span>
+            <span class="text-[11px] text-emerald-400 font-medium">Tick Size</span>
+          </label>
+          <div class="relative rounded-xl shadow-sm">
+            <select id="input-stock-type"
+              class="block w-full h-[46px] rounded-xl border border-slate-700 bg-slate-900/90 pl-3 pr-8 text-white text-xs font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none cursor-pointer appearance-none">
+              <option value="standard" selected>一般銘柄 (標準呼値)</option>
+              <option value="topix500">TOPIX500 構成銘柄</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Field 5: Presets -->
         <div>
           <div class="block text-xs font-bold text-slate-400 mb-2 h-5 flex items-center whitespace-nowrap">
             <span>クイック入力</span>
           </div>
           <div class="flex items-center gap-1.5 h-[46px]">
-            <button type="button" onclick="setPreset(1000, 100)" class="h-full text-xs px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all active:scale-95 flex items-center justify-center font-medium whitespace-nowrap">
-              1,000円 / 100株
+            <button type="button" onclick="setPreset(1000, 100)" class="h-full text-xs px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all active:scale-95 flex items-center justify-center font-medium whitespace-nowrap">
+              1,000円
             </button>
-            <button type="button" onclick="setPreset(3000, 100)" class="h-full text-xs px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all active:scale-95 flex items-center justify-center font-medium whitespace-nowrap">
-              3,000円 / 100株
+            <button type="button" onclick="setPreset(3000, 100)" class="h-full text-xs px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all active:scale-95 flex items-center justify-center font-medium whitespace-nowrap">
+              3,000円
             </button>
-            <button type="button" onclick="resetForm()" class="h-full text-xs px-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50 transition-all flex items-center justify-center gap-1 font-medium whitespace-nowrap" title="リセット">
+            <button type="button" onclick="setPreset(20000, 100)" class="h-full text-xs px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all active:scale-95 flex items-center justify-center font-medium whitespace-nowrap">
+              20,000円
+            </button>
+            <button type="button" onclick="resetForm()" class="h-full text-xs px-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50 transition-all flex items-center justify-center gap-1 font-medium whitespace-nowrap" title="リセット">
               <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
             </button>
           </div>
@@ -229,7 +250,7 @@
           <i data-lucide="list-checks" class="w-4 h-4 text-blue-400"></i>
           <span>楽天証券 注文画面入力用 パラメータ試算一覧 (±1% 〜 ±10%)</span>
         </div>
-        <div class="text-[11px] text-slate-400">
+        <div id="list-header-action" class="text-[11px] text-slate-400">
           緑: 成行売り円 / 赤: 開始逆指値円 / 青: 下落幅% & 確定利益
         </div>
       </div>
@@ -255,6 +276,7 @@
     const inputPrice = document.getElementById('input-price');
     const inputQuantity = document.getElementById('input-quantity');
     const inputTrailRatio = document.getElementById('input-trail-ratio');
+    const inputStockType = document.getElementById('input-stock-type');
 
     const emptyNotice = document.getElementById('empty-notice');
     const resultsContainer = document.getElementById('results-container');
@@ -268,6 +290,19 @@
     const guideCloseBtn = document.getElementById('guide-close-btn');
     const guideBox = document.getElementById('guide-box');
 
+    // State Variables
+    let activeCardPercent = null;
+
+    // Toggle Focus on Card
+    window.toggleCardFocus = function(percent) {
+      if (percent === null || activeCardPercent === percent) {
+        activeCardPercent = null;
+      } else {
+        activeCardPercent = percent;
+      }
+      calculateAndRender();
+    };
+
     // Toggle Help Guide Box
     guideToggleBtn.addEventListener('click', () => {
       guideBox.classList.toggle('hidden');
@@ -276,9 +311,49 @@
       guideBox.classList.add('hidden');
     });
 
+    // TSE (Tokyo Stock Exchange) Tick Size Rules
+    function getTseTickSize(price, isTopix500) {
+      const p = Math.abs(price);
+      if (isTopix500) {
+        // TOPIX500 Stocks (Decimal Tick Table)
+        if (p <= 1000) return 0.1;
+        if (p <= 3000) return 0.5;
+        if (p <= 10000) return 1;
+        if (p <= 30000) return 5;
+        if (p <= 100000) return 10;
+        if (p <= 300000) return 50;
+        if (p <= 1000000) return 100;
+        if (p <= 3000000) return 500;
+        if (p <= 10000000) return 1000;
+        return 5000;
+      } else {
+        // Standard Stocks (TOPIX500 以外)
+        if (p <= 3000) return 1;
+        if (p <= 5000) return 5;
+        if (p <= 30000) return 10;
+        if (p <= 50000) return 50;
+        if (p <= 300000) return 100;
+        if (p <= 500000) return 500;
+        if (p <= 3000000) return 1000;
+        if (p <= 5000000) return 5000;
+        return 10000;
+      }
+    }
+
+    // Round price to valid TSE Tick Size (四捨五入)
+    function roundToTseTick(price, isTopix500) {
+      if (price === null || Number.isNaN(price)) return price;
+      const tick = getTseTickSize(price, isTopix500);
+      const rounded = Math.round(price / tick) * tick;
+      return Math.round(rounded * 10000) / 10000;
+    }
+
     // Formatting Utility Functions
     function formatYen(num) {
       if (num === null || Number.isNaN(num)) return '--';
+      if (num % 1 !== 0) {
+        return num.toLocaleString('ja-JP', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' 円';
+      }
       return Math.round(num).toLocaleString('ja-JP') + ' 円';
     }
 
@@ -301,6 +376,7 @@
       inputPrice.value = '';
       inputQuantity.value = '';
       inputTrailRatio.value = '20';
+      inputStockType.value = 'standard';
       calculateAndRender();
     }
 
@@ -309,6 +385,7 @@
       const price = parseFloat(inputPrice.value);
       const quantityVal = inputQuantity.value.trim();
       const quantity = quantityVal !== '' && !Number.isNaN(parseFloat(quantityVal)) ? parseFloat(quantityVal) : null;
+      const isTopix500 = inputStockType.value === 'topix500';
       
       let trailRatio = parseFloat(inputTrailRatio.value);
       if (Number.isNaN(trailRatio) || trailRatio < 0) trailRatio = 20;
@@ -332,41 +409,83 @@
       summaryQuantity.textContent = quantity !== null ? `${quantity.toLocaleString('ja-JP')} 株` : '未指定';
       summaryTotalInvestment.textContent = quantity !== null ? formatYen(price * quantity) : '未指定 (株数未入力)';
 
+      // Update List Header Action
+      const listHeaderAction = document.getElementById('list-header-action');
+      if (listHeaderAction) {
+        if (activeCardPercent !== null) {
+          listHeaderAction.innerHTML = `
+            <button type="button" onclick="toggleCardFocus(null)" class="text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30 flex items-center gap-1.5 transition-all font-bold shadow-sm">
+              <i data-lucide="eye" class="w-3.5 h-3.5 text-amber-400"></i>
+              ±${activeCardPercent}% カードを集中選択中（クリックで解除）
+            </button>
+          `;
+        } else {
+          listHeaderAction.innerHTML = `
+            <span class="text-[11px] text-slate-400 font-normal">
+              緑: 成行売り円 / 赤: 開始逆指値円 / 青: 下落幅% & 確定利益
+            </span>
+          `;
+        }
+      }
+
       // Generate 1% to 10% Order Cards
       let cardsHTML = '';
       for (let i = 1; i <= 10; i++) {
         const percent = i; // 1% ~ 10%
 
-        // 1. 成行売り条件の円表示 (-i% 下落時: 損切り発動)
-        const marketSellPrice = price * (1 - percent / 100);
+        // 1. 成行売り条件の円表示 (-i% 下落時: 損切り発動) -> 呼値補正
+        const rawMarketSellPrice = price * (1 - percent / 100);
+        const marketSellPrice = roundToTseTick(rawMarketSellPrice, isTopix500);
         const stopLoss = quantity !== null ? (marketSellPrice - price) * quantity : null;
 
-        // 2. 開始条件の円表示 (+i% 上昇時: トレイリング機能スタート)
-        const startConditionPrice = price * (1 + percent / 100);
+        // 2. 開始条件の円表示 (+i% 上昇時: トレイリング機能スタート) -> 呼値補正
+        const rawStartConditionPrice = price * (1 + percent / 100);
+        const startConditionPrice = roundToTseTick(rawStartConditionPrice, isTopix500);
         const targetProfit = quantity !== null ? (startConditionPrice - price) * quantity : null;
 
         // 3. 何%下がったら売るかの表示 (トレイリング幅 %)
-        // Drop in % = percent * (trailRatio / 100)
         const dropPercent = percent * (trailRatio / 100);
 
-        // Executed price & profit after trailing drop (after reaching startConditionPrice)
+        // Executed price & profit after trailing drop -> 呼値補正
         const execPercent = percent - dropPercent;
-        const execPrice = price * (1 + execPercent / 100);
+        const rawExecPrice = price * (1 + execPercent / 100);
+        const execPrice = roundToTseTick(rawExecPrice, isTopix500);
         const execProfit = quantity !== null ? (execPrice - price) * quantity : null;
 
+        // Focus State Classes & Badges
+        const isSelected = activeCardPercent === percent;
+        const hasAnySelection = activeCardPercent !== null;
+
+        let cardContainerClasses = '';
+        let statusBadgeHTML = '';
+
+        if (isSelected) {
+          cardContainerClasses = 'rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 border-2 border-amber-400 ring-4 ring-amber-500/25 bg-slate-900/95 scale-[1.01] opacity-100 z-10 cursor-pointer';
+          statusBadgeHTML = `<span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1 shadow-md"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> 選択中 (転記用)</span>`;
+        } else if (hasAnySelection) {
+          cardContainerClasses = 'glass-card rounded-2xl overflow-hidden border border-slate-800/40 shadow-sm transition-all duration-300 opacity-20 hover:opacity-75 grayscale-[20%] cursor-pointer';
+          statusBadgeHTML = `<span class="text-[11px] text-slate-500 font-medium group-hover:text-slate-300">クリックで切替</span>`;
+        } else {
+          cardContainerClasses = 'glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-800/80 shadow-xl transition-all duration-300 cursor-pointer';
+          statusBadgeHTML = `<span class="text-[11px] text-slate-400 font-medium">クリックでカード強調</span>`;
+        }
+
         cardsHTML += `
-          <div class="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-800/80 shadow-xl">
+          <div onclick="toggleCardFocus(${percent})" class="${cardContainerClasses}">
             
             <!-- Card Level Title Bar -->
             <div class="bg-slate-900 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2.5">
-                <span class="w-8 h-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-center font-extrabold text-sm shadow-md">
+                <span class="w-8 h-8 rounded-xl ${isSelected ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black' : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-extrabold'} flex items-center justify-center text-sm shadow-md">
                   ±${percent}%
                 </span>
-                <span class="text-sm font-extrabold text-white">変動幅 ±${percent}% 設定カード (基準株価: ${formatYen(price)})</span>
+                <span class="text-sm font-extrabold ${isSelected ? 'text-amber-300' : 'text-white'}">変動幅 ±${percent}% 設定カード (基準株価: ${formatYen(price)})</span>
               </div>
-              <div class="text-xs text-slate-400 font-medium">
-                開始ターゲット: <strong class="text-emerald-400">+${percent}.0%</strong> / 損切リスク: <strong class="text-rose-400">-${percent}.0%</strong>
+              <div class="flex items-center gap-3">
+                <div class="text-xs text-slate-400 font-medium hidden sm:block">
+                  開始ターゲット: <strong class="text-emerald-400">+${percent}.0%</strong> / 損切リスク: <strong class="text-rose-400">-${percent}.0%</strong>
+                </div>
+                ${statusBadgeHTML}
               </div>
             </div>
 
@@ -387,7 +506,7 @@
                   </div>
                   
                   <!-- Primary Input Amount (Prominent & Right-aligned) -->
-                  <div class="mt-3 bg-slate-900/90 p-3.5 rounded-xl border border-rose-500/40 text-right shadow-md">
+                  <div class="mt-3 bg-slate-900/90 p-3.5 rounded-xl border ${isSelected ? 'border-rose-400 shadow-rose-950/50' : 'border-rose-500/40'} text-right shadow-md">
                     <div class="text-[11px] text-slate-400 font-medium">楽天証券入力金額 (成行売り損切)</div>
                     <div class="text-2xl font-black text-rose-300 mt-1 tracking-tight text-right">${formatYen(marketSellPrice)}</div>
                   </div>
@@ -413,7 +532,7 @@
                   </div>
 
                   <!-- Primary Input Amount (Prominent & Right-aligned) -->
-                  <div class="mt-3 bg-slate-900/90 p-3.5 rounded-xl border border-emerald-500/40 text-right shadow-md">
+                  <div class="mt-3 bg-slate-900/90 p-3.5 rounded-xl border ${isSelected ? 'border-emerald-400 shadow-emerald-950/50' : 'border-emerald-500/40'} text-right shadow-md">
                     <div class="text-[11px] text-slate-400 font-medium">楽天証券入力金額 (トレイリング開始)</div>
                     <div class="text-2xl font-black text-emerald-300 mt-1 tracking-tight text-right">${formatYen(startConditionPrice)}</div>
                   </div>
@@ -439,7 +558,7 @@
                   </div>
 
                   <!-- Primary Input Amount (Prominent & Right-aligned) -->
-                  <div class="mt-3 bg-slate-900/90 p-3.5 rounded-xl border border-blue-500/40 text-right shadow-md">
+                  <div class="mt-3 bg-slate-900/90 p-3.5 rounded-xl border ${isSelected ? 'border-blue-400 shadow-blue-950/50' : 'border-blue-500/40'} text-right shadow-md">
                     <div class="text-[11px] text-slate-400 font-medium">楽天証券入力 (下落幅設定)</div>
                     <div class="text-2xl font-black text-blue-300 mt-1 tracking-tight text-right">${dropPercent.toFixed(2).replace(/\.?0+$/, '')} % 下落</div>
                   </div>
@@ -476,6 +595,7 @@
     inputPrice.addEventListener('input', calculateAndRender);
     inputQuantity.addEventListener('input', calculateAndRender);
     inputTrailRatio.addEventListener('input', calculateAndRender);
+    inputStockType.addEventListener('change', calculateAndRender);
 
     // Initial Lucide Icons Render
     document.addEventListener('DOMContentLoaded', () => {
