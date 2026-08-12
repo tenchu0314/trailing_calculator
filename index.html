@@ -367,39 +367,8 @@
                 </span>
                 <span class="text-sm font-extrabold text-white">変動幅 ±${percent}% 設定カード (基準株価: ${formatYen(price)})</span>
               </div>
-              <div class="text-xs text-slate-400">
+              <div class="text-xs text-slate-400 font-medium">
                 開始ターゲット: <strong class="text-emerald-400">+${percent}.0%</strong> / 損切リスク: <strong class="text-rose-400">-${percent}.0%</strong>
-              </div>
-            </div>
-
-            <!-- Prominent Rakuten Order Entry Banner (High Visibility Highlight) -->
-            <div class="bg-slate-950/90 px-4 py-3 border-b border-amber-500/40 flex flex-wrap items-center justify-between gap-3 shadow-inner">
-              <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/60 text-xs font-black flex items-center gap-1.5 shadow-sm">
-                  <i data-lucide="copy" class="w-4 h-4 text-amber-400"></i>
-                  楽天証券 注文画面に入力する数値
-                </span>
-              </div>
-              
-              <div class="flex items-center gap-3 flex-wrap">
-                <!-- 1. 成行売り (損切: -i%) -->
-                <div class="flex items-center gap-2 bg-rose-950/90 px-3.5 py-1.5 rounded-xl border border-rose-500/60 shadow-md">
-                  <span class="text-xs text-rose-300 font-bold">1. 成行売り株価 (損切):</span>
-                  <span class="text-base font-extrabold text-rose-400 tracking-tight">${formatYen(marketSellPrice)}</span>
-                </div>
-
-                <!-- 2. 開始条件 (+i%) -->
-                <div class="flex items-center gap-2 bg-emerald-950/90 px-3.5 py-1.5 rounded-xl border border-emerald-500/60 shadow-md">
-                  <span class="text-xs text-emerald-300 font-bold">2. 開始条件株価 (スタート):</span>
-                  <span class="text-base font-extrabold text-emerald-400 tracking-tight">${formatYen(startConditionPrice)}</span>
-                </div>
-
-                <!-- 3. 下落幅% -->
-                <div class="flex items-center gap-2 bg-blue-950/90 px-3.5 py-1.5 rounded-xl border border-blue-500/60 shadow-md">
-                  <span class="text-xs text-blue-300 font-bold">3. 下落幅設定:</span>
-                  <span class="text-base font-extrabold text-blue-300 tracking-tight">${dropPercent.toFixed(2).replace(/\.?0+$/, '')} %</span>
-                  <span class="text-[11px] text-slate-400 font-medium">(-${dropJpy.toFixed(1).replace(/\.0$/, '')}円幅)</span>
-                </div>
               </div>
             </div>
 
@@ -419,15 +388,16 @@
                     </span>
                   </div>
                   
-                  <div class="mt-3 bg-slate-900/90 p-3 rounded-xl border border-rose-500/30">
+                  <!-- Primary Input Amount (Prominent & Right-aligned) -->
+                  <div class="mt-3 bg-slate-900/90 p-3.5 rounded-xl border border-rose-500/40 text-right shadow-md">
                     <div class="text-[11px] text-slate-400 font-medium">楽天証券入力金額 (成行売り損切)</div>
-                    <div class="text-xl font-extrabold text-rose-300 mt-0.5 tracking-tight">${formatYen(marketSellPrice)}</div>
+                    <div class="text-2xl font-black text-rose-300 mt-1 tracking-tight text-right">${formatYen(marketSellPrice)}</div>
                   </div>
                 </div>
 
                 <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
                   <span class="text-slate-400 text-[11px]">損切時の想定損失額</span>
-                  <span class="font-bold text-rose-400 text-sm">${quantity !== null ? formatYenWithSign(stopLoss) : '- ' + percent + '.0%'}</span>
+                  <span class="font-bold text-rose-400 text-sm text-right">${quantity !== null ? formatYenWithSign(stopLoss) : '- ' + percent + '.0%'}</span>
                 </div>
               </div>
 
@@ -444,15 +414,16 @@
                     </span>
                   </div>
 
-                  <div class="mt-3 bg-slate-900/90 p-3 rounded-xl border border-emerald-500/30">
+                  <!-- Primary Input Amount (Prominent & Right-aligned) -->
+                  <div class="mt-3 bg-slate-900/90 p-3.5 rounded-xl border border-emerald-500/40 text-right shadow-md">
                     <div class="text-[11px] text-slate-400 font-medium">楽天証券入力金額 (トレイリング開始)</div>
-                    <div class="text-xl font-extrabold text-emerald-300 mt-0.5 tracking-tight">${formatYen(startConditionPrice)}</div>
+                    <div class="text-2xl font-black text-emerald-300 mt-1 tracking-tight text-right">${formatYen(startConditionPrice)}</div>
                   </div>
                 </div>
 
                 <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
                   <span class="text-slate-400 text-[11px]">開始到達時の想定含み益</span>
-                  <span class="font-bold text-emerald-400 text-sm">${quantity !== null ? formatYenWithSign(targetProfit) : '+ ' + percent + '.0%'}</span>
+                  <span class="font-bold text-emerald-400 text-sm text-right">${quantity !== null ? formatYenWithSign(targetProfit) : '+ ' + percent + '.0%'}</span>
                 </div>
               </div>
 
@@ -469,31 +440,26 @@
                     </span>
                   </div>
 
-                  <div class="mt-3 bg-slate-900/90 p-3 rounded-xl border border-blue-500/30 space-y-1.5">
-                    <div class="flex items-center justify-between text-xs">
-                      <span class="text-slate-400">下落幅設定値 (%)</span>
-                      <span class="text-sm font-extrabold text-blue-300">${dropPercent.toFixed(2).replace(/\.?0+$/, '')} % 下落</span>
-                    </div>
+                  <!-- Primary Input Amount (Prominent & Right-aligned) -->
+                  <div class="mt-3 bg-slate-900/90 p-3.5 rounded-xl border border-blue-500/40 text-right space-y-1.5 shadow-md">
+                    <div class="text-[11px] text-slate-400 font-medium">楽天証券入力 (下落幅設定)</div>
+                    <div class="text-2xl font-black text-blue-300 mt-0.5 tracking-tight text-right">${dropPercent.toFixed(2).replace(/\.?0+$/, '')} % 下落</div>
                     <div class="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800 pt-1">
                       <span>金額換算幅</span>
-                      <span class="font-semibold text-slate-300">-${dropJpy.toFixed(1).replace(/\.0$/, '')} 円 幅</span>
-                    </div>
-                    <div class="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>実質残算利回り</span>
-                      <span class="font-bold text-emerald-400">+${execPercent.toFixed(2).replace(/\.?0+$/, '')} %</span>
+                      <span class="font-bold text-slate-300 text-right">-${dropJpy.toFixed(1).replace(/\.0$/, '')} 円 幅</span>
                     </div>
                   </div>
                 </div>
 
-                <!-- Executed Result & Profit Display -->
+                <!-- Executed Result & Profit Display (Right-aligned) -->
                 <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
                   <div>
-                    <span class="text-slate-400 text-[11px]">トレイリング決済約定株価</span>
-                    <div class="font-bold text-blue-300 text-xs">${formatYen(execPrice)}</div>
+                    <span class="text-slate-400 text-[11px]">トレイリング決済株価</span>
+                    <div class="font-bold text-blue-300 text-xs text-right">${formatYen(execPrice)}</div>
                   </div>
                   <div class="text-right">
                     <span class="text-slate-400 text-[11px]">確定利益 (売却成立)</span>
-                    <div class="font-bold text-blue-400 text-sm">${quantity !== null ? formatYenWithSign(execProfit) : '+ ' + execPercent.toFixed(2).replace(/\.?0+$/, '') + '%'}</div>
+                    <div class="font-bold text-blue-400 text-sm text-right">${quantity !== null ? formatYenWithSign(execProfit) : '+ ' + execPercent.toFixed(2).replace(/\.?0+$/, '') + '%'}</div>
                   </div>
                 </div>
 
